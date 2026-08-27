@@ -3,7 +3,7 @@ assignment: true
 complete: false
 due: 2026-09-06
 due_time: 11:59pm
-status: not-started
+status: draft
 ---
 
 Assignment GH: https://github.com/msu-denver/26FCS4360-002-project-proposal
