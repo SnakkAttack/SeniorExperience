@@ -1,6 +1,6 @@
 # Preamble
 
-* **Project Title:** Receipts: Automated Privacy Policy and Terms of Service Analysis
+* **Project Title:** Clause: Automated Privacy Policy and Terms of Service Analysis
 * **Team Name:** Hydrated Homies for Human Data Rights
 * **Members & Roles:**
   * Gage Gunn, Technical Lead, Developer
