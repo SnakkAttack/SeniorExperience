@@ -27,6 +27,10 @@ const TIMEZONE = 'America/Denver';
 const HORIZON_DAYS = Number(process.env.HORIZON_DAYS) || 14;
 const ALERT_FLOOR_DAYS = -3; // stop pinging once something is this far overdue
 
+// Doubles as the board's fingerprint when the pin is unavailable, so changing it
+// orphans the current board and a fresh one gets posted.
+const BOARD_TITLE = '📅 Senior Experience - Deadlines';
+
 const API = 'https://discord.com/api/v10';
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
@@ -176,7 +180,7 @@ function buildBoard(items) {
   return {
     embeds: [
       {
-        title: '📅 Senior Experience - Deadlines',
+        title: BOARD_TITLE,
         description: lines.join('\n\n'),
         color: bucketFor(visible[0].days).color, // soonest item sets the mood
         footer: { text: 'Updated every morning · edit due dates in the vault' },
@@ -204,6 +208,15 @@ function buildAlert(items) {
 
 /* ------------------------------------------------------------------- api --- */
 
+class HttpError extends Error {
+  constructor(status, method, path, detail) {
+    super(`${method} ${path} -> ${status}${detail ? ` ${detail}` : ''}`);
+    this.status = status;
+  }
+}
+
+const isFatal = (err) => err instanceof HttpError && (err.status === 401 || err.status === 403);
+
 async function api(method, path, body) {
   for (let attempt = 0; attempt < 3; attempt++) {
     const res = await fetch(`${API}${path}`, {
@@ -222,15 +235,9 @@ async function api(method, path, body) {
       await sleep(retryAfter * 1000 + 250);
       continue;
     }
-    if (res.status === 401) {
-      fail('Discord rejected the bot token. Reset it in the developer portal, then update the DISCORD_BOT_TOKEN secret.');
-    }
-    if (res.status === 403) {
-      fail(`Discord returned 403 for ${method} ${path}. The bot is either not in the server, or lacks a permission on that channel.`);
-    }
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
-      throw new Error(`${method} ${path} -> ${res.status} ${detail.slice(0, 300)}`);
+      throw new HttpError(res.status, method, path, detail.slice(0, 300));
     }
 
     return res.status === 204 ? null : res.json();
@@ -238,26 +245,55 @@ async function api(method, path, body) {
   throw new Error(`${method} ${path} kept getting rate limited - gave up`);
 }
 
-/** Discord is the state store. The bot's own pinned message is the board, so a
- *  deleted pin just means tomorrow's run rebuilds it. No state file, no drift. */
-async function findPinnedBoard() {
-  let pinned = [];
-  try {
-    const res = await api('GET', `/channels/${CHANNEL_ID}/messages/pins`);
-    pinned = (res?.items ?? []).map((entry) => entry.message);
-  } catch {
-    const res = await api('GET', `/channels/${CHANNEL_ID}/pins`); // pre-2025 shape
-    pinned = Array.isArray(res) ? res : [];
+const isOurBoard = (message) =>
+  message?.author?.id === APP_ID && message?.embeds?.[0]?.title === BOARD_TITLE;
+
+/** Discord is the state store - there is no state file to drift.
+ *
+ *  The pin is the preferred handle, but pinning needs Manage Messages, which a
+ *  locked-down channel can revoke independently of the server-wide grant. So an
+ *  unpinnable board must still be findable, or every morning posts a duplicate.
+ *  Recent history is the fallback: slower, but it makes the pin purely cosmetic. */
+async function findBoard() {
+  const pinEndpoints = [`/channels/${CHANNEL_ID}/messages/pins`, `/channels/${CHANNEL_ID}/pins`];
+
+  for (const path of pinEndpoints) {
+    try {
+      const res = await api('GET', path);
+      // Newer API wraps each pin as { pinned_at, message }; the older one is a bare array.
+      const messages = Array.isArray(res) ? res : (res?.items ?? []).map((entry) => entry.message);
+      const found = messages.find(isOurBoard);
+      if (found) return found;
+    } catch (err) {
+      if (isFatal(err)) throw err;
+    }
   }
-  return pinned.find((message) => message?.author?.id === APP_ID) ?? null;
+
+  try {
+    const recent = await api('GET', `/channels/${CHANNEL_ID}/messages?limit=50`);
+    return (Array.isArray(recent) ? recent : []).find(isOurBoard) ?? null;
+  } catch (err) {
+    if (isFatal(err)) throw err;
+    return null;
+  }
 }
 
+/** Best-effort. A board that failed to pin still works; it just scrolls away. */
 async function pin(messageId) {
-  try {
-    await api('PUT', `/channels/${CHANNEL_ID}/messages/pins/${messageId}`);
-  } catch {
-    await api('PUT', `/channels/${CHANNEL_ID}/pins/${messageId}`);
+  for (const path of [`/channels/${CHANNEL_ID}/messages/pins/${messageId}`, `/channels/${CHANNEL_ID}/pins/${messageId}`]) {
+    try {
+      await api('PUT', path);
+      return true;
+    } catch {
+      // Try the other endpoint shape before giving up.
+    }
   }
+  warn(
+    'could not pin the board - the bot needs Manage Messages on this channel. ' +
+      'The board still updates correctly (future runs find it by scanning recent messages), ' +
+      'it just will not stay pinned to the top.'
+  );
+  return false;
 }
 
 /* ------------------------------------------------------------------ main --- */
@@ -283,17 +319,28 @@ for (const [name, value] of Object.entries({ DISCORD_BOT_TOKEN: TOKEN, DISCORD_C
   if (!value) fail(`${name} is not set`);
 }
 
-const existing = await findPinnedBoard();
-if (existing) {
-  await api('PATCH', `/channels/${CHANNEL_ID}/messages/${existing.id}`, board);
-  console.log(`Edited pinned board ${existing.id}`);
-} else {
-  const created = await api('POST', `/channels/${CHANNEL_ID}/messages`, board);
-  await pin(created.id);
-  console.log(`Created and pinned board ${created.id}`);
-}
+try {
+  const existing = await findBoard();
 
-if (alert) {
-  await api('POST', `/channels/${CHANNEL_ID}/messages`, alert);
-  console.log('Posted @here alert');
+  if (existing) {
+    await api('PATCH', `/channels/${CHANNEL_ID}/messages/${existing.id}`, board);
+    console.log(`Edited board ${existing.id}`);
+  } else {
+    const created = await api('POST', `/channels/${CHANNEL_ID}/messages`, board);
+    const pinned = await pin(created.id);
+    console.log(`Created board ${created.id}${pinned ? ' and pinned it' : ' (unpinned)'}`);
+  }
+
+  if (alert) {
+    await api('POST', `/channels/${CHANNEL_ID}/messages`, alert);
+    console.log('Posted @here alert');
+  }
+} catch (err) {
+  if (err.status === 401) {
+    fail('Discord rejected the bot token. Reset it in the developer portal, then update the DISCORD_BOT_TOKEN secret.');
+  }
+  if (err.status === 403) {
+    fail(`${err.message}\nThe bot is missing a permission on this channel. Check the channel-level overrides on #announcements - they beat the server-wide grant from the invite.`);
+  }
+  fail(err.message);
 }
