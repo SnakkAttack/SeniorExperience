@@ -22,7 +22,9 @@ const ASSIGNMENTS_DIR = 'Assignments';
 const TIMEZONE = 'America/Denver';
 // Board lists anything due within this window. Overridable so a manual run can
 // widen the view without editing the file.
-const HORIZON_DAYS = Number(process.env.HORIZON_DAYS) || 7;
+// 14 rather than 7: coursework lands weeks apart, and a board that is empty
+// most mornings trains people to stop looking at it.
+const HORIZON_DAYS = Number(process.env.HORIZON_DAYS) || 14;
 const ALERT_FLOOR_DAYS = -3; // stop pinging once something is this far overdue
 
 const API = 'https://discord.com/api/v10';
