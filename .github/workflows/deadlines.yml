@@ -1,0 +1,39 @@
+name: Deadline board
+
+on:
+  schedule:
+    # GitHub cron is UTC only and does not follow DST.
+    # 13:00 UTC = 07:00 MDT (summer) / 06:00 MST (winter).
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+    inputs:
+      horizon_days:
+        description: 'How many days ahead the board should show'
+        required: false
+        default: '7'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deadline-board
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: node .github/scripts/deadlines.mjs
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          # Not secrets - a channel or application ID grants no access on its own.
+          DISCORD_CHANNEL_ID: '1542560640986648687'
+          DISCORD_APP_ID: '1542577577250529350'
+          # Empty on scheduled runs, so the script's own default of 7 applies.
+          HORIZON_DAYS: ${{ inputs.horizon_days }}
