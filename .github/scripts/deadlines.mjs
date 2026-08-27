@@ -31,6 +31,15 @@ const ALERT_FLOOR_DAYS = -3; // stop pinging once something is this far overdue
 // Comfortably under the 24h cron gap, so the daily reminder still lands.
 const ALERT_DEDUPE_HOURS = 20;
 
+// `complete` is the switch: a boolean renders as a real checkbox in Obsidian's
+// properties panel, so clearing an assignment is one click in the note. These
+// status words stay supported as a fallback, since a note written before the
+// checkbox existed should not silently reappear on the board.
+const DONE_STATUSES = new Set(['submitted', 'complete', 'completed', 'done', 'finished', 'turned-in']);
+const ACTIVE_STATUSES = new Set(['not-started', 'started', 'in-progress', 'in-review', 'blocked']);
+
+const isChecked = (value) => ['true', 'yes', 'on', '1', 'x'].includes(String(value ?? '').toLowerCase().trim());
+
 // Doubles as the board's fingerprint when the pin is unavailable, so changing it
 // orphans the current board and a fresh one gets posted.
 const BOARD_TITLE = '📅 Senior Experience - Deadlines';
@@ -146,8 +155,19 @@ async function collectAssignments() {
     const raw = (await readFile(file, 'utf8')).replace(/^﻿/, '').replace(/\r\n/g, '\n');
     const fields = parseFrontmatter(raw);
 
-    if (!fields || String(fields.assignment).toLowerCase() !== 'true') continue;
-    if (String(fields.status ?? '').toLowerCase() === 'submitted') continue;
+    if (!fields || !isChecked(fields.assignment)) continue;
+    if (isChecked(fields.complete)) continue;
+
+    const status = String(fields.status ?? '').toLowerCase().trim();
+    if (DONE_STATUSES.has(status)) continue;
+    if (status && !ACTIVE_STATUSES.has(status)) {
+      // Erring toward still-open: a typo that hid a deadline would be far worse
+      // than one that leaves it visible with a warning in the log.
+      warn(
+        `${file}: unrecognized status ${JSON.stringify(fields.status)} - treating it as still open. ` +
+          `Use one of: ${[...ACTIVE_STATUSES, ...DONE_STATUSES].join(', ')}`
+      );
+    }
 
     const due = fields.due ?? '';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(due) || Number.isNaN(Date.parse(`${due}T00:00:00Z`))) {
@@ -159,6 +179,7 @@ async function collectAssignments() {
     items.push({
       title: fields.title || displayName(file),
       due,
+      status: status.replace(/-/g, ' '),
       time: fields.due_time ?? '', // free text, shown as written
       days: daysBetween(now, due),
       path: file.replace(/\\/g, '/'),
@@ -177,7 +198,8 @@ function buildBoard(items) {
   const lines = visible.map((item) => {
     const bucket = bucketFor(item.days);
     return (
-      `${bucket.emoji} **${item.title}** - ${bucket.label(item.days)}\n` +
+      `${bucket.emoji} **${item.title}** - ${bucket.label(item.days)}` +
+      `${item.status ? ` · \`${item.status}\`` : ''}\n` +
       `-# ${prettyDate(item.due)}${item.time ? ` at ${item.time}` : ''} · ${item.path}`
     );
   });

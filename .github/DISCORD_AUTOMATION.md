@@ -22,6 +22,7 @@ top of the note — **line 1, nothing above it, not even a blank line**:
 ```
 ---
 assignment: true
+complete: false
 due: 2026-09-06
 due_time: 11:59pm
 status: not-started
@@ -30,10 +31,18 @@ status: not-started
 
 * `assignment: true` opts the note in. Without it the note is ignored, which is
   how notes that merely mention a date stay off the board.
+* `complete:` clears the assignment from the board when it is turned in. Because
+  it holds `true` or `false`, Obsidian shows it as a real checkbox in the
+  properties panel, so finishing an assignment is one click and a push.
 * `due:` must be `YYYY-MM-DD`. Prose like `Sun Sep 6` is not parsed.
 * `due_time:` is optional free text, shown on the board exactly as written.
-* `status:` accepts `not-started`, `in-progress`, or `submitted`. Setting it to
-  `submitted` removes the assignment from the board.
+* `status:` is the descriptive tag shown next to the assignment. Use
+  `not-started`, `started`, `in-progress`, `in-review`, or `blocked`.
+  * The older done-words (`submitted`, `done`, `completed`, `finished`,
+    `turned-in`, `complete`) still clear the board, so notes written before the
+    checkbox existed keep working. New notes should use the checkbox.
+  * Any other value is treated as still open and reported in the workflow log. A
+    typo that left a deadline visible is recoverable; one that hid it is not.
 * `title:` is optional and overrides the display name.
 
 **Do not also write the due date in the body of the note.** Two copies drift:
