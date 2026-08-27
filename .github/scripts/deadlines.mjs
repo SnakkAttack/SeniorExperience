@@ -348,6 +348,12 @@ try {
   if (existing) {
     await api('PATCH', `/channels/${CHANNEL_ID}/messages/${existing.id}`, board);
     console.log(`Edited board ${existing.id}`);
+
+    // A board created while Manage Messages was denied stays unpinned forever
+    // otherwise, since pinning was previously only attempted on creation.
+    if (!existing.pinned && (await pin(existing.id))) {
+      console.log('Pinned the existing board');
+    }
   } else {
     const created = await api('POST', `/channels/${CHANNEL_ID}/messages`, board);
     const pinned = await pin(created.id);
