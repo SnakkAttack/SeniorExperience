@@ -37,7 +37,7 @@ status: not-started
 * `due:` must be `YYYY-MM-DD`. Prose like `Sun Sep 6` is not parsed.
 * `due_time:` is optional free text, shown on the board exactly as written.
 * `status:` is the descriptive tag shown next to the assignment. Use
-  `not-started`, `started`, `in-progress`, `in-review`, or `blocked`.
+  `not-started`, `draft`, `started`, `in-progress`, `in-review`, or `blocked`.
   * The older done-words (`submitted`, `done`, `completed`, `finished`,
     `turned-in`, `complete`) still clear the board, so notes written before the
     checkbox existed keep working. New notes should use the checkbox.

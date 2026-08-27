@@ -36,7 +36,7 @@ const ALERT_DEDUPE_HOURS = 20;
 // status words stay supported as a fallback, since a note written before the
 // checkbox existed should not silently reappear on the board.
 const DONE_STATUSES = new Set(['submitted', 'complete', 'completed', 'done', 'finished', 'turned-in']);
-const ACTIVE_STATUSES = new Set(['not-started', 'started', 'in-progress', 'in-review', 'blocked']);
+const ACTIVE_STATUSES = new Set(['not-started', 'draft', 'started', 'in-progress', 'in-review', 'blocked']);
 
 const isChecked = (value) => ['true', 'yes', 'on', '1', 'x'].includes(String(value ?? '').toLowerCase().trim());
 
