@@ -27,6 +27,10 @@ const TIMEZONE = 'America/Denver';
 const HORIZON_DAYS = Number(process.env.HORIZON_DAYS) || 14;
 const ALERT_FLOOR_DAYS = -3; // stop pinging once something is this far overdue
 
+// Runs also fire on push, so the same alert can be generated many times a day.
+// Comfortably under the 24h cron gap, so the daily reminder still lands.
+const ALERT_DEDUPE_HOURS = 20;
+
 // Doubles as the board's fingerprint when the pin is unavailable, so changing it
 // orphans the current board and a fresh one gets posted.
 const BOARD_TITLE = '📅 Senior Experience - Deadlines';
@@ -278,6 +282,25 @@ async function findBoard() {
   }
 }
 
+/** The board is edited in place, so re-running it is free. An alert is a new
+ *  message that pings everyone, so re-running it is not. Push-triggered runs
+ *  would otherwise ping once per push on the day something comes due. */
+async function alertAlreadyPosted(alert) {
+  try {
+    const recent = await api('GET', `/channels/${CHANNEL_ID}/messages?limit=50`);
+    const cutoff = Date.now() - ALERT_DEDUPE_HOURS * 3_600_000;
+    return (Array.isArray(recent) ? recent : []).some(
+      (message) =>
+        message?.author?.id === APP_ID &&
+        message?.content === alert.content &&
+        Date.parse(message.timestamp) > cutoff
+    );
+  } catch (err) {
+    if (isFatal(err)) throw err;
+    return false; // a duplicate ping beats a missed deadline
+  }
+}
+
 /** Best-effort. A board that failed to pin still works; it just scrolls away. */
 async function pin(messageId) {
   for (const path of [`/channels/${CHANNEL_ID}/messages/pins/${messageId}`, `/channels/${CHANNEL_ID}/pins/${messageId}`]) {
@@ -332,8 +355,12 @@ try {
   }
 
   if (alert) {
-    await api('POST', `/channels/${CHANNEL_ID}/messages`, alert);
-    console.log('Posted @here alert');
+    if (await alertAlreadyPosted(alert)) {
+      console.log('Identical @here alert already posted recently - staying quiet');
+    } else {
+      await api('POST', `/channels/${CHANNEL_ID}/messages`, alert);
+      console.log('Posted @here alert');
+    }
   }
 } catch (err) {
   if (err.status === 401) {
