@@ -5,6 +5,7 @@ These are the terms of group conduct and cooperation that we agree on as a team.
 ## Participation
 **We agree to:** 
 
+SADKJLHASD
 ## Communication
 **We agree to:** 
 
