@@ -2,7 +2,7 @@
 assignment: true
 due: 2026-09-01
 due_time: 10:00am
-status: not-started
+status: Completed
 ---
 
 Assignment GH: https://github.com/msu-denver/26FCS4360-002-team-agreements
