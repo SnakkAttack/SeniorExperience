@@ -4,9 +4,9 @@
 * **Team Name:** Hydrated Homies for Human Data Rights
 * **Members & Roles:**
   * Gage Gunn, Technical Lead, Developer
-  * Sam, Project Manager, Developer
-  * Alex Kimoni, Developer
-  * Jaiden Searle, Documentation Lead, Developer
+  * Sam Holton, Project Manager, Documentation Lead, Developer
+  * Jaiden Searle, Documentation, Developer
+  * Alex Kimoni, Documentation, Developer
 
 # Executive Summary
 
@@ -134,17 +134,17 @@ Build a working, publicly usable system that produces trustworthy, evidence-back
 **SMART Objectives**
 
 1. **Extraction reliability.** By the end of week 2, successfully locate and extract clean policy text from at least 16 of 20 randomly selected websites spanning large, medium, and small services. Measured by manual verification of extracted text against the source page.
-2. **Classifier performance.** By the end of week 10, train and deploy a policy segment classifier achieving a macro-averaged F1 of at least 0.70 across the ten OPP-115 practice categories on a held-out test split, reported alongside published baselines from the Polisis literature.
-3. **Coverage and validation.** By the end of week 12, have analyzed and cached at least 500 services, and report our per-check agreement rate against every service that ToS;DR has comprehensively graded, with disagreements manually classified as our error, their staleness, or genuine ambiguity.
+2. **Classifier performance.** By the end of week 4, report per-category precision, recall, and F1 for a first policy segment classifier on a held-out OPP-115 split; by the end of week 10, deploy a classifier in the live pipeline achieving a macro-averaged F1 of at least 0.70 across the ten OPP-115 practice categories, reported alongside published baselines from the Polisis literature. The week 4 checkpoint exists so that a shortfall surfaces while there is still time to change approach.
+3. **Coverage and validation.** By the end of week 12, have analyzed and cached at least 500 services, seeded from the ToS;DR public service catalogue and supplemented by user requests, and report our per-check agreement rate against every service that ToS;DR has comprehensively graded, with disagreements manually classified as our error, their staleness, or genuine ambiguity.
 
 **Success Criteria**
 
 * Extraction success rate on the random sample meets or exceeds 80%
 * Classifier macro F1 at or above 0.70 on held-out data, with a per-category confusion matrix reported
 * Quote verification rate (findings whose returned quote is confirmed present in source text) at or above 95%
-* Run-to-run consistency: repeated analysis of identical documents produces identical findings at or above 90% agreement
+* Run-to-run consistency: with extraction pinned to temperature 0 and a fixed prompt and rubric version, repeated analysis of an identical document produces identical findings at or above 90% agreement across three runs on a 50-document sample
 * At least 500 services analyzed, cached, and browsable
-* Change detection demonstrably identifies at least one real policy change during the monitoring period
+* Change detection, running daily across the full tracked set, correctly identifies every change we can confirm by manual inspection in a 30-document audit sample, with no more than one false positive per 100 document-checks
 
 # 6. Deliverables & Milestones
 
@@ -162,19 +162,41 @@ Build a working, publicly usable system that produces trustworthy, evidence-back
 
 **Timeline & Milestones**
 
-| Weeks | Phase | Milestone |
-|---|---|---|
-| 1–2 | Extraction spike | Go/no-go decision on document discovery; 20-site test complete; fallback path confirmed if needed |
-| 3–6 | Vertical slice | One service end to end: fetch, classify, extract, verify, score, render scorecard. Rubric v1 frozen |
-| 7–10 | ML and scale | Classifier trained and evaluated; 500 services analyzed; ToS;DR ingest live; request queue live |
-| 11–13 | Monitoring | Daily diff loop, change feed, staleness flags, browser extension shipped |
-| 14–15 | Evaluation and delivery | Accuracy report finalized, polish, presentation, STAR write-up |
+The classifier runs as a parallel track beginning in week 1 rather than waiting on
+the pipeline. OPP-115 is a static annotated corpus, so training and evaluation
+share no dependency with document discovery, and the two highest-uncertainty
+components can therefore be de-risked simultaneously.
+
+| Weeks | Pipeline track | ML track (parallel) | Milestone |
+|---|---|---|---|
+| 1–2 | Extraction spike | Corpus preparation, splits, classical baseline | Go/no-go on document discovery; 20-site test complete; fallback confirmed if needed |
+| 3–4 | Normalization, version hashing, storage | First trained classifier, per-category metrics reported | Feasibility of both hardest components known by week 4 |
+| 5–6 | Vertical slice: fetch → extract → verify → score → scorecard | Model iteration against the week-4 baseline | One service end to end; rubric v1 frozen |
+| 7–10 | Scale to 500 services; ToS;DR ingest; request queue | Classifier deployed into the live pipeline; final tuning | Target macro F1 met or fallback approach chosen and justified |
+| 11–13 | Daily diff loop, change feed, staleness flags, browser extension | Evaluation harness and accuracy measurements | Monitoring live; extension shipped |
+| 14–15 | Polish and delivery | Accuracy report finalized | Final presentation and STAR write-up |
+
+**Module Ownership**
+
+| Module | Owner |
+|---|---|
+| Discovery, fetch, normalization, version hashing | Jaiden Searle |
+| Segment classifier and evaluation harness | Gage Gunn |
+| LLM extraction and quote verification | Gage Gunn, Alex Kimoni |
+| Deterministic scorer and rubric specification | Sam Holton |
+| Website and public read API | Sam Holton |
+| Browser extension | Alex Kimoni |
+| Monitoring, change feed, staleness detection | Jaiden Searle |
+
+Owners are responsible for implementation, tests, and documentation of their
+module, and every member participates in code review across module boundaries.
 
 **Demonstrations**
 
 * Week 2: extraction spike results presented to instructor as the feasibility gate
+* Week 4: classifier baseline metrics, the second feasibility gate
 * Week 6: vertical slice demo, one service scored end to end with evidence displayed
-* Week 10: classifier metrics and scaled coverage review
+* Week 10: deployed classifier metrics and scaled coverage review
 * Week 13: monitoring and change detection demo
 * Week 15: final presentation, including live analysis of an audience-selected website
 
@@ -188,6 +210,8 @@ Build a working, publicly usable system that produces trustworthy, evidence-back
 4. **Cost overrun on LLM usage.** Analyzing hundreds of documents repeatedly could exceed a student budget.
 5. **Scope overrun.** Four modules plus an ML component plus two clients is substantial for one semester.
 6. **Upstream dependency changes.** A third-party API or dataset could change terms or availability mid-project.
+7. **Degree exception not approved.** The ML component's concurrent credit toward DSML 4360 depends on an approval process outside the team's control, and the classifier scope was sized partly around that requirement.
+8. **Disputed findings from named companies.** We publish automated factual claims about identifiable businesses on a public site under a university course. Even an accurate finding can draw a complaint, and an inaccurate one is a reputational problem for the team and the department.
 
 **Mitigation Plan**
 
@@ -197,3 +221,17 @@ Build a working, publicly usable system that produces trustworthy, evidence-back
 4. Analyze each document version once and cache centrally; re-analyze only when a content hash changes. Classify segments first so the LLM processes only relevant text rather than whole documents.
 5. Build the vertical slice by week 6 so a demonstrable working product exists well before the deadline. Later phases layer on top of a functioning system rather than being required for it. Monitoring, extension, and comparison views are all severable if time compresses.
 6. Design ingestion as pluggable adapters so a source change is a swap rather than a rebuild, and cache retrieved third-party data locally rather than depending on live availability during demos.
+7. Build the classifier as a required CS deliverable on its own merits, so its value to the project does not depend on the exception being granted. The parallel ML track produces reportable metrics by week 4 regardless of the approval timeline, and the evaluation report stands as a deliverable either way.
+8. Publish a visible correction path: every scorecard links to a dispute form, disputed findings are re-reviewed by a team member against the source document within a stated window, and a finding that cannot be substantiated by its quote is withdrawn rather than defended. Display an automated-analysis disclaimer and the analysis date on every scorecard, describe practices in the document's own terms without asserting intent, and keep the full document version history so any published claim can be traced to the exact text that produced it.
+
+# References
+
+* Harkous, H., Fawaz, K., Lebret, R., Schaub, F., Shin, K. G., and Aberer, K. "Polisis: Automated Analysis and Presentation of Privacy Policies Using Deep Learning." USENIX Security Symposium, 2018.
+* Wilson, S., et al. "The Creation and Analysis of a Website Privacy Policy Corpus." Association for Computational Linguistics, 2016. Source of the OPP-115 corpus.
+* Terms of Service; Didn't Read. Public service catalogue and API, licensed CC BY-SA 3.0.
+* PrivacySpy. Open-source rubric-based privacy policy rating project.
+* Open Terms Archive. Public datasets of tracked policy document versions.
+* Consumer Reports. Permission Slip data-rights application, discontinued 2026.
+
+A fuller competitive and literature review, covering all twelve prior efforts
+surveyed, is a separate deliverable listed above.
