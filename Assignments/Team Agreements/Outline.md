@@ -6,7 +6,7 @@ status: not-started
 
 Assignment GH: https://github.com/msu-denver/26FCS4360-002-team-agreements
 
-Due Sun Sep 6, 2026 by 11:59pm.
+Due Tue Sep 1, 2026 10:00am
 
 # Preamble 
 
