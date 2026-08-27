@@ -23,6 +23,7 @@ top of the note — **line 1, nothing above it, not even a blank line**:
 ---
 assignment: true
 due: 2026-09-06
+due_time: 11:59pm
 status: not-started
 ---
 ```
@@ -30,9 +31,15 @@ status: not-started
 * `assignment: true` opts the note in. Without it the note is ignored, which is
   how notes that merely mention a date stay off the board.
 * `due:` must be `YYYY-MM-DD`. Prose like `Sun Sep 6` is not parsed.
+* `due_time:` is optional free text, shown on the board exactly as written.
 * `status:` accepts `not-started`, `in-progress`, or `submitted`. Setting it to
   `submitted` removes the assignment from the board.
 * `title:` is optional and overrides the display name.
+
+**Do not also write the due date in the body of the note.** Two copies drift:
+the readable one gets corrected, the frontmatter does not, and the board keeps
+showing the old date while looking like it is broken. The frontmatter is the
+only date, and `due_time` exists so nothing has to live in prose.
 
 The board labels each item with its **folder** name, not the filename, because
 most of our notes are called `Outline.md`. If a folder holds several notes, flag

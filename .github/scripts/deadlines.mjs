@@ -159,6 +159,7 @@ async function collectAssignments() {
     items.push({
       title: fields.title || displayName(file),
       due,
+      time: fields.due_time ?? '', // free text, shown as written
       days: daysBetween(now, due),
       path: file.replace(/\\/g, '/'),
     });
@@ -177,7 +178,7 @@ function buildBoard(items) {
     const bucket = bucketFor(item.days);
     return (
       `${bucket.emoji} **${item.title}** - ${bucket.label(item.days)}\n` +
-      `-# ${prettyDate(item.due)} · ${item.path}`
+      `-# ${prettyDate(item.due)}${item.time ? ` at ${item.time}` : ''} · ${item.path}`
     );
   });
 
@@ -201,7 +202,8 @@ function buildAlert(items) {
 
   const lines = urgent.map((item) => {
     const bucket = bucketFor(item.days);
-    return `${bucket.emoji} **${item.title}** - ${bucket.label(item.days)} (${prettyDate(item.due)})`;
+    const when = `${prettyDate(item.due)}${item.time ? ` at ${item.time}` : ''}`;
+    return `${bucket.emoji} **${item.title}** - ${bucket.label(item.days)} (${when})`;
   });
 
   return {

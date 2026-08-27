@@ -1,12 +1,11 @@
 ---
 assignment: true
 due: 2026-09-06
+due_time: 11:59pm
 status: not-started
 ---
 
 Assignment GH: https://github.com/msu-denver/26FCS4360-002-project-proposal
-
-Due Sun Sep 6, 2026 by 11:59pm.
 
 # Preamble
 * **Project Title:** 
