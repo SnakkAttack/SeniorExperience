@@ -15,7 +15,7 @@ These are the terms of group conduct and cooperation that we agree on as a team.
 - Own our assigned modules end to end: implementation, tests, and the technical documentation for that module. If your module is broken, it is yours to fix or yours to escalate.
 - Take on a fair share of the work we like least. Extraction edge cases and evaluation plumbing get distributed, not quietly inherited by whoever complains last.
 - Say so early when a task turns out to be bigger than scoped. Reporting a problem in week one is participation; going quiet until the deadline is not.
-- Keep our Jira tasks current, because task status is how the other two know what is safe to build on.
+- Keep our Jira tasks current, because task status is how everyone else knows what is safe to build on.
 
 ## Communication
 **We agree to:**
@@ -47,7 +47,7 @@ These are the terms of group conduct and cooperation that we agree on as a team.
 ## Conflict
 **We agree to:**
 
-- Raise disagreements directly with the person involved first, in the channel or on a call, not by venting to the third member.
+- Raise disagreements directly with the person involved first, in the channel or on a call, rather than venting about them to the rest of the team.
 - Talk it out and, when we remain split on a technical call, let the owner of the affected module decide. Their call is final for that module and everyone commits to it.
 - Take cross-cutting disagreements, meaning anything touching scope, schedule, or the rubric, to a full-team decision rather than to a single owner.
 - Separate disagreement from obstruction. Once a decision is made, arguing is over and the work proceeds, even for whoever lost the argument.
@@ -59,7 +59,7 @@ These are the terms of group conduct and cooperation that we agree on as a team.
 - Set an internal deadline at least 48 hours before every external one, so review and submission are not the same act.
 - Track due dates in the vault, where a bot posts them to our Discord announcements channel and pings the team when something is due within a day. Nobody's deadline awareness should depend on remembering to check Canvas.
 - Flag a slipping task as soon as we know it will slip, not on the due date. Early warning gives the team options; a missed deadline gives it none.
-- Have the whole team review a graded deliverable before it is submitted, since one member submits on behalf of all three.
+- Have the whole team review a graded deliverable before it is submitted, since one member submits on behalf of everyone.
 - Treat unfinished work as the team's problem once it is raised. Whoever has capacity picks up the remainder rather than letting it fail on principle.
 
 ## Signatures
